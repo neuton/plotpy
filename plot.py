@@ -43,7 +43,8 @@ class Plot:
 		self.p, = plt.plot(x, y, linewidth=lnwd, linestyle=lnstyle, marker=mrkr, color=color, label=self.label)
 		if self.ie is not None:
 			plt.errorbar(x, y, yerr=e, linewidth=lnwd, marker=None, color=color)
-		plt.legend()
+		if self.label is not None:
+			plt.legend()
 
 
 _opened_files = set()
