@@ -5,9 +5,6 @@ import sys
 import shlex
 
 
-default_axis = [None]*4
-
-
 class Plot:
 	
 	def __init__(self, iy, ix=None, ie=None, color=None, mrkr=None, lnwd=None, lnstyle=None, label=None):
@@ -22,7 +19,7 @@ class Plot:
 	def plot(self, data):
 		y0 = data[self.iy-1]
 		if self.ix is None:
-			x0 = range(len(data[0]))
+			x0 = range(len(y0))
 		else:
 			x0 = data[self.ix-1]
 		if self.ie is None:
@@ -36,6 +33,7 @@ class Plot:
 			plt.legend(numpoints=1)
 
 
+_default_axis = [None]*4
 _opened_files = set()
 
 def parseFile(filename):
@@ -48,7 +46,7 @@ def parseFile(filename):
 		else:
 			return True
 	
-	global default_axis
+	global _default_axis
 	default_style = {'color':None, 'mrkr':None, 'lnstyle':None, 'lnwd':None}
 	included_files, data, inc_data, plots, inc_plots = [], [], [], [], []
 	
@@ -76,13 +74,13 @@ def parseFile(filename):
 				plt.xlabel(xlabel)
 				plt.ylabel(ylabel)
 			elif a == 'minx':
-				default_axis[0] = float(val)
+				_default_axis[0] = float(val)
 			elif a == 'maxx':
-				default_axis[1] = float(val)
+				_default_axis[1] = float(val)
 			elif a == 'miny':
-				default_axis[2] = float(val)
+				_default_axis[2] = float(val)
 			elif a == 'maxy':
-				default_axis[3] = float(val)
+				_default_axis[3] = float(val)
 			elif a == 'color':
 				default_style['color'] = val
 			elif a == 'marker':
@@ -208,8 +206,8 @@ if __name__ == '__main__':
 	if plots == []:
 		plots = [Plot(i+1) for i in range(len(data))]
 	
-	x1, x2, y1, y2 = default_axis
-	all_x = sum([[d for d in data[plot.ix-1] if d is not None] for plot in plots],[])
+	x1, x2, y1, y2 = _default_axis
+	all_x = sum([[d for d in data[plot.ix-1] if d is not None] if plot.ix is not None else range(len(data[plot.iy-1])) for plot in plots],[])
 	all_y = sum([[d for d in data[plot.iy-1] if d is not None] for plot in plots],[])
 	x2 = x2 or max(all_x)
 	x1 = x1 or min(all_x)
