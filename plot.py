@@ -7,14 +7,14 @@ import shlex
 
 class Plot:
 	
-	def __init__(self, iy, ix=None, ie=None, color=None, mrkr=None, lnwd=None, lnstyle=None, label=None):
+	def __init__(self, iy, ix=None, iex=None, iey=None, color=None, mrkr=None, lnwd=None, lnstyle=None, label=None):
 		self.kwargs = {'linewidth':lnwd or 1, 'linestyle':lnstyle or '-', 'marker':mrkr, 'label':label}
 		if color is not None:
 			self.kwargs['color'] = color
-		self.ix, self.iy, self.ie = ix, iy, ie
+		self.ix, self.iy, self.iex, self.iey = ix, iy, iex, iey
 	
 	def shift(self, shift):
-		self.ix, self.iy, self.ie = map(lambda i: i if i is None else i+shift, (self.ix, self.iy, self.ie))
+		self.ix, self.iy, self.iex, self.iey = map(lambda i: i if i is None else i+shift, (self.ix, self.iy, self.iex, self.iey))
 	
 	def plot(self, data):
 		y0 = data[self.iy-1]
@@ -22,12 +22,19 @@ class Plot:
 			x0 = range(len(y0))
 		else:
 			x0 = data[self.ix-1]
-		if self.ie is None:
-			x, y = zip(*[[dx, dy] for dx, dy in zip(x0,y0) if dx is not None and dy is not None])
+		if self.iex is None:
+			ex0 = [None]*len(x0)
 		else:
-			e0 = map(lambda d: 0. if d is None else d, data[self.ie-1])
-			x, y, e = zip(*[[dx, dy, de] for dx, dy, de in zip(x0,y0,e0) if dx is not None and dy is not None])
-			self.kwargs['yerr'] = e
+			ex0 = map(lambda d: 0. if d is None else d, data[self.iex-1])
+		if self.iey is None:
+			ey0 = [None]*len(y0)
+		else:
+			ey0 = map(lambda d: 0. if d is None else d, data[self.iey-1])
+		x, y, ex, ey = zip(*[[dx, dy, dex, dey] for dx, dy, dex, dey in zip(x0,y0,ex0,ey0) if dx is not None and dy is not None])
+		if self.iex is not None:
+			self.kwargs['xerr'] = ex
+		if self.iey is not None:
+			self.kwargs['yerr'] = ey
 		self.p = plt.errorbar(x, y, **self.kwargs)
 		if self.kwargs['label'] is not None:
 			plt.legend(numpoints=1)
@@ -101,12 +108,14 @@ def parseFile(filename):
 				mrkr = default_style['mrkr']
 				lnwd = default_style['lnwd']
 				lnstyle = default_style['lnstyle']
-				ie = label = source = None
+				iex = iey = label = source = None
 				for s in l:
 					a = s.split('=')
 					pn = a[0].strip()
-					if pn == 'yerror':
-						ie = int(a[1])
+					if 'xerr' in pn:
+						iex = int(a[1])
+					elif 'yerr' in pn:
+						iey = int(a[1])
 					elif pn == 'color':
 						color = a[1].strip()
 					elif pn == 'marker':
@@ -134,7 +143,7 @@ def parseFile(filename):
 						inc_data.append(nd)
 						inc_plots += np
 						included_files.append(source)
-				plots.append(Plot(iy,ix,ie,color,mrkr,lnwd,lnstyle,label))
+				plots.append(Plot(iy,ix,iex,iey,color,mrkr,lnwd,lnstyle,label))
 				plots[-1].shift(shift)
 			elif a == 'include':
 				for f in shlex.split(val):
