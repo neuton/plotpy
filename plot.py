@@ -5,27 +5,21 @@ import sys
 import shlex
 
 
-default_style = {'color':'black', 'mrkr':None, 'lnwd':1, 'lnstyle':'-'}
 default_axis = [None]*4
 
 
 class Plot:
 	
 	def __init__(self, iy, ix=None, ie=None, color=None, mrkr=None, lnwd=None, lnstyle=None, label=None):
-		self.iy = iy
-		self.ix = ix
-		self.ie = ie
-		self.color = color
-		self.mrkr = mrkr
-		self.lnwd = lnwd
-		self.lnstyle = lnstyle
-		self.label = label
+		self.kwargs = {'linewidth':lnwd or 1, 'linestyle':lnstyle or '-', 'marker':mrkr, 'label':label}
+		if color is not None:
+			self.kwargs['color'] = color
+		self.ix, self.iy, self.ie = ix, iy, ie
 	
 	def shift(self, shift):
 		self.ix, self.iy, self.ie = map(lambda i: i if i is None else i+shift, (self.ix, self.iy, self.ie))
 	
-	def plot(self):
-		global data, default_style
+	def plot(self, data):
 		y0 = data[self.iy-1]
 		if self.ix is None:
 			x0 = range(len(data[0]))
@@ -36,15 +30,10 @@ class Plot:
 		else:
 			e0 = map(lambda d: 0. if d is None else d, data[self.ie-1])
 			x, y, e = zip(*[[dx, dy, de] for dx, dy, de in zip(x0,y0,e0) if dx is not None and dy is not None])
-		color = self.color or default_style['color']
-		mrkr = self.mrkr or default_style['mrkr']
-		lnwd = self.lnwd or default_style['lnwd']
-		lnstyle = self.lnstyle or default_style['lnstyle']
-		self.p, = plt.plot(x, y, linewidth=lnwd, linestyle=lnstyle, marker=mrkr, color=color, label=self.label)
-		if self.ie is not None:
-			plt.errorbar(x, y, yerr=e, linewidth=lnwd, marker=None, color=color)
-		if self.label is not None:
-			plt.legend()
+			self.kwargs['yerr'] = e
+		self.p = plt.errorbar(x, y, **self.kwargs)
+		if self.kwargs['label'] is not None:
+			plt.legend(numpoints=1)
 
 
 _opened_files = set()
@@ -59,7 +48,8 @@ def parseFile(filename):
 		else:
 			return True
 	
-	global default_style, default_axis
+	global default_axis
+	default_style = {'color':None, 'mrkr':None, 'lnstyle':None, 'lnwd':None}
 	included_files, data, inc_data, plots, inc_plots = [], [], [], [], []
 	
 	global _opened_files
@@ -109,7 +99,11 @@ def parseFile(filename):
 				else:
 					ix, iy = None, int(l[0])
 					l = l[1:]
-				ie = color = mrkr = lnwd = lnstyle = label = source = None
+				color = default_style['color']
+				mrkr = default_style['mrkr']
+				lnwd = default_style['lnwd']
+				lnstyle = default_style['lnstyle']
+				ie = label = source = None
 				for s in l:
 					a = s.split('=')
 					pn = a[0].strip()
@@ -179,10 +173,10 @@ def initFig():
 	#plt.gca().tick_params(which='minor', bottom='on', labelbottom='on')
 	#plt.setp(plt.gca().get_xticklabels(minor=True), visible=True)
 
-def saveFig(filename='fig.eps'):
+def saveFig(filename):
 	fig = plt.gcf()
 	fig.set_size_inches(18,10)
-	fig.savefig(filename, format=filename.split('.')[-1])
+	fig.savefig(filename)
 
 def showFig():
 	plt.show()
@@ -226,7 +220,7 @@ if __name__ == '__main__':
 	plt.axis([x1-xs/20., x2+xs/20., y1-ys/20., y2+ys/20.])
 	
 	for plot in plots:
-		plot.plot()
+		plot.plot(data)
 	
 	if output_filename is None:
 		showFig()
