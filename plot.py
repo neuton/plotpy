@@ -191,24 +191,24 @@ if __name__ == '__main__':
 	
 	initFig()
 	
-	output_filename = None
-	if len(sys.argv) > 1:
-		args = sys.argv[1:]
-		if '-o' in args:
-			i = args.index('-o')
-			output_filename = args[i+1]
-			filenames = set(args[:i]+args[i+2:])
-		else:
-			filenames = set(args)
-		data, plots = [], []
-		for f in filenames:
-			ndata, nplots = parseFile(f)
-			for plot in nplots:
-				plot.shift(len(data))
-			data += ndata
-			plots += nplots
+	args = sys.argv[1:]
+	if '-o' in args:
+		i = args.index('-o')
+		output_filename = args[i+1]
+		filenames = set(args[:i]+args[i+2:])
 	else:
-		data, plots = parseFile('plot.txt')
+		output_filename = None
+		filenames = set(args)
+	if filenames == set():
+		filenames = ['plot.txt']
+	
+	data, plots = [], []
+	for f in filenames:
+		ndata, nplots = parseFile(f)
+		for plot in nplots:
+			plot.shift(len(data))
+		data += ndata
+		plots += nplots
 	
 	if plots == []:
 		plots = [Plot(i+1) for i in range(len(data))]
