@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import sys
 import shlex
+import os
 
 
 class Plot:
@@ -131,6 +132,7 @@ def parseFile(filename):
 				shift = 0
 				label = label or source
 				if source is not None:
+					source = os.path.join(os.path.dirname(filename), source)
 					if source in _opened_files:
 						raise Exception('Recursive inclusion!')
 					if source in included_files:
@@ -147,6 +149,7 @@ def parseFile(filename):
 				plots[-1].shift(shift)
 			elif a == 'include':
 				for f in shlex.split(val):
+					f = os.path.join(os.path.dirname(filename), f)
 					if f in _opened_files:
 						raise Exception('Recursive inclusion!')
 					if f not in included_files:
@@ -228,6 +231,8 @@ if __name__ == '__main__':
 	
 	for plot in plots:
 		plot.plot(data)
+	
+	plt.legend(loc=0, numpoints=1)
 	
 	if output_filename is None:
 		showFig()
